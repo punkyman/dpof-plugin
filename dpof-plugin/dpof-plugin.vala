@@ -11,9 +11,9 @@ extern const string _VERSION;
 // to Shotwell to extend its functionality,
 //
 
-private class SimplePluginModule : Object, Spit.Module {
+private class DPOFPluginModule : Object, Spit.Module {
     public unowned string get_module_name() {
-        return "Simple Plugin Sample";
+        return "DPOF Plugin";
     }
     
     public unowned string get_version() {
@@ -22,7 +22,7 @@ private class SimplePluginModule : Object, Spit.Module {
     
     // Every module needs to have a unique ID.
     public unowned string get_id() {
-        return "org.yorba.shotwell.samples.simple-plugin";
+        return "org.punkyman.dpof-plugin";
     }
     
     public unowned Spit.Pluggable[]? get_pluggables() {
@@ -40,7 +40,7 @@ public Spit.Module? spit_entry_point(Spit.EntryPointParams *params) {
         params->host_max_spit_interface, Spit.CURRENT_INTERFACE);
     
     return (params->module_spit_interface != Spit.UNSUPPORTED_INTERFACE)
-        ? new SimplePluginModule() : null;
+        ? new DPOFPluginModule() : null;
 }
 
 // This is here to keep valac happy.
