@@ -1,5 +1,6 @@
 
 PROGRAM := dpof-plugin
+PANE := dpof-pane
 VERSION := 0.1.0
 
 all: $(PROGRAM).so
@@ -12,10 +13,14 @@ install:
 	mkdir -p ~/.gnome2/shotwell/plugins
 	install -m 644 $(PROGRAM).so ~/.gnome2/shotwell/plugins
 	install -m 644 $(PROGRAM).png ~/.gnome2/shotwell/plugins
+	install -m 644 $(PANE).glade ~/.gnome2/shotwell/plugins
 
 uninstall:
 	@ [ `whoami` != "root" ] || ( echo 'Run make install as yourself, not as root.' ; exit 1 )
 	rm -f ~/.gnome2/shotwell/plugins/$(PROGRAM).so
+
+indent:
+	indent -linux $(PROGRAM).vala
 
 $(PROGRAM).so: $(PROGRAM).vala Makefile
 	valac --save-temps --main=dummy_main -X -D_VERSION='"$(VERSION)"' --pkg=shotwell-plugin-dev-1.0 \
