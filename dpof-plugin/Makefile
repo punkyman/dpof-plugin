@@ -11,6 +11,7 @@ install:
 	@ [ `whoami` != "root" ] || ( echo 'Run make install as yourself, not as root.' ; exit 1 )
 	mkdir -p ~/.gnome2/shotwell/plugins
 	install -m 644 $(PROGRAM).so ~/.gnome2/shotwell/plugins
+	install -m 644 $(PROGRAM).png ~/.gnome2/shotwell/plugins
 
 uninstall:
 	@ [ `whoami` != "root" ] || ( echo 'Run make install as yourself, not as root.' ; exit 1 )

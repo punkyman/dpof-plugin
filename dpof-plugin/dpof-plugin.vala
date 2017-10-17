@@ -11,10 +11,31 @@ extern const string _VERSION;
 // to Shotwell to extend its functionality,
 //
 
-private class DPOFPluginService : Object, Spit.Pluggable, Spit.Publishing.Service {
-        
+// taken from plugins/common/Resources.vala
+public Gdk.Pixbuf[]? load_icon_set(GLib.File? icon_file) {
+    Gdk.Pixbuf? icon = null;
+    try {
+        icon = new Gdk.Pixbuf.from_file(icon_file.get_path());
+    } catch (Error err) {
+        warning("couldn't load icon set from %s.", icon_file.get_path());
+    }
+    
+    if (icon_file != null) {
+        Gdk.Pixbuf[] icon_pixbuf_set = new Gdk.Pixbuf[0];
+        icon_pixbuf_set += icon;
+        return icon_pixbuf_set;
+    }
+    
+    return null;
+}
 
-    public DPOFPluginService() {
+private class DPOFPluginService : Object, Spit.Pluggable, Spit.Publishing.Service {
+    private const string ICON_FILENAME = "dpof-plugin.png";
+    private static Gdk.Pixbuf[] icon_pixbuf_set = null;
+
+    public DPOFPluginService(GLib.File resource_directory) {
+        if (icon_pixbuf_set == null)
+            icon_pixbuf_set = load_icon_set(resource_directory.get_child(ICON_FILENAME));
     }
 
     public unowned string get_id() {
@@ -33,7 +54,7 @@ private class DPOFPluginService : Object, Spit.Pluggable, Spit.Publishing.Servic
         info.authors = "Julien Reiss";
         info.version = _VERSION;
         info.is_license_wordwrapped = false;
-        
+        info.icons = icon_pixbuf_set;        
     }    
     public unowned string get_pluggable_name() {
         return "DPOF";
@@ -51,9 +72,11 @@ private class DPOFPluginService : Object, Spit.Pluggable, Spit.Publishing.Servic
 private class DPOFPluginModule : Object, Spit.Module {
     private Spit.Pluggable[] pluggables = new Spit.Pluggable[0];
 
-    public DPOFPluginModule()
+    public DPOFPluginModule(GLib.File module_file)
     {
-        pluggables += new DPOFPluginService();
+        GLib.File resource_directory = module_file.get_parent();
+
+        pluggables += new DPOFPluginService(resource_directory);
     }
 
     public unowned string get_module_name() {
@@ -84,7 +107,7 @@ public Spit.Module? spit_entry_point(Spit.EntryPointParams *params) {
         params->host_max_spit_interface, Spit.CURRENT_INTERFACE);
     
     return (params->module_spit_interface != Spit.UNSUPPORTED_INTERFACE)
-        ? new DPOFPluginModule() : null;
+        ? new DPOFPluginModule(params->module_file) : null;
 }
 
 // This is here to keep valac happy.
