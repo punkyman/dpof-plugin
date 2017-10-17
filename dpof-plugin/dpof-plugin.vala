@@ -52,6 +52,8 @@ namespace Publishing.DPOF {
 			this.publishing_parameters = new PublishingParameters();
 		}
 
+        //Spit.Publishing.Publishable[] publishables = host.get_publishables();
+
         private void do_show_service_welcome_pane() {
 			debug("ACTION: showing publishing options pane.");
 
@@ -107,44 +109,20 @@ namespace Publishing.DPOF {
 			return running;
 		}
 	}
-	private enum PrivacySetting {
-		PUBLIC,
-		UNLISTED,
-		PRIVATE
-	}
+
 private class PublishingParameters {
-		private PrivacySetting privacy;
-		private string ? channel_name;
-		private string ? user_name;
+		private string ? path;
 
 		public PublishingParameters() {
-			this.privacy = PrivacySetting.PRIVATE;
-			this.channel_name = null;
-			this.user_name = null;
+			this.path = null;
 		}
 
-		public PrivacySetting get_privacy() {
-			return this.privacy;
+		public string ? get_path() {
+			return this.path;
 		}
 
-		public void set_privacy(PrivacySetting privacy) {
-			this.privacy = privacy;
-		}
-
-		public string ? get_channel_name() {
-			return channel_name;
-		}
-
-		public void set_channel_name(string ? channel_name) {
-			this.channel_name = channel_name;
-		}
-
-		public string ? get_user_name() {
-			return user_name;
-		}
-
-		public void set_user_name(string ? user_name) {
-			this.user_name = user_name;
+		public void set_path(string ? path) {
+			this.path = path;
 		}
 	}
 /*
