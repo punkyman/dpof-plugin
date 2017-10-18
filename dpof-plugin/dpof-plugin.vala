@@ -36,7 +36,7 @@ namespace Publishing.DPOF {
 	public class DPOFPublisher:Spit.Publishing.Publisher, GLib.Object {
 
 		private PublishingParameters publishing_parameters;
-//		private PublishingOptionsPane ? publishing_options_pane = null;
+		private PublishingLocationPane ? publishing_location_pane = null;
 
 		private weak Spit.Publishing.PluginHost host = null;
 		private weak Spit.Publishing.Service service = null;
@@ -54,7 +54,7 @@ namespace Publishing.DPOF {
 
         //Spit.Publishing.Publishable[] publishables = host.get_publishables();
 
-        private void do_show_service_welcome_pane() {
+        private void do_show_pane() {
 			debug("ACTION: showing publishing options pane.");
 
 			Gtk.Builder builder = new Gtk.Builder();
@@ -73,12 +73,22 @@ namespace Publishing.DPOF {
 				return;
 			}
 
-			/*publishing_options_pane = new PublishingOptionsPane(host, builder,
+			publishing_location_pane = new PublishingLocationPane(host, builder,
 						      publishing_parameters);
-			host.install_dialog_pane(publishing_options_pane);*/
+
+            publishing_location_pane.publish.connect(on_location_publish);
+
+			host.install_dialog_pane(publishing_location_pane);
 
 			host.set_service_locked(false);
 		}
+
+        private void on_location_publish() {
+            debug("clicked OK");
+
+            if(!is_running())
+                return;
+        }
 
 		public Spit.Publishing.Service get_service() {
 			return service;
@@ -94,9 +104,9 @@ namespace Publishing.DPOF {
 
 			// reset all publishing parameters to their default values -- in case this start is
 			// actually a restart
-			//publishing_parameters = new PublishingParameters();
+			publishing_parameters = new PublishingParameters();
 
-			do_show_service_welcome_pane();
+			do_show_pane();
 		}
 
 		public void stop() {
@@ -125,124 +135,57 @@ private class PublishingParameters {
 			this.path = path;
 		}
 	}
-/*
-	internal class PublishingOptionsPane:Spit.Publishing.DialogPane,
+
+	internal class PublishingLocationPane : Spit.Publishing.DialogPane,
 	    GLib.Object {
-		private class PrivacyDescription {
-			public string description;
-			public PrivacySetting privacy_setting;
+        
+        public signal void publish();
 
-			public PrivacyDescription(string description,
-						  PrivacySetting
-						  privacy_setting) {
-				this.description = description;
-				this.privacy_setting = privacy_setting;
-		}} public signal void publish();
-		public signal void logout();
+        private Gtk.Builder builder = null;
 
-		private Gtk.Box pane_widget = null;
-		private Gtk.ComboBoxText privacy_combo = null;
-		private Gtk.Label publish_to_label = null;
-		private Gtk.Label login_identity_label = null;
-		private Gtk.Button publish_button = null;
-		private Gtk.Button logout_button = null;
-		private Gtk.Builder builder = null;
-		private Gtk.Label privacy_label = null;
-		private PrivacyDescription[] privacy_descriptions;
+		private Gtk.Box file_widget = null;
+		private Gtk.FileChooserWidget file_chooser = null;
+		private Gtk.Button ok_button = null;
 		private PublishingParameters publishing_parameters;
 
-		public PublishingOptionsPane(Spit.Publishing.PluginHost host,
+		public PublishingLocationPane(Spit.Publishing.PluginHost host,
 					     Gtk.Builder builder,
 					     PublishingParameters
 					     publishing_parameters) {
-			this.privacy_descriptions =
-			    create_privacy_descriptions();
 			this.publishing_parameters = publishing_parameters;
 
 			this.builder = builder;
 			assert(builder != null);
 			assert(builder.get_objects().length() > 0);
 
-			login_identity_label =
+            file_widget  =
 			    this.
-			    builder.get_object("login_identity_label") as Gtk.
-			    Label;
-			privacy_combo =
-			    this.builder.
-			    get_object("privacy_combo") as Gtk. ComboBoxText;
-			publish_to_label =
-			    this.builder.
-			    get_object("publish_to_label") as Gtk. Label;
-			publish_button =
-			    this.builder.
-			    get_object("publish_button") as Gtk. Button;
-			logout_button =
-			    this.builder.
-			    get_object("logout_button") as Gtk. Button;
-			pane_widget =
+			    builder.get_object("DPOFFileChooser") as Gtk.Box;
+
+			file_chooser =
 			    this.
-			    builder.get_object("youtube_pane_widget") as Gtk.
-			    Box;
-			privacy_label =
+			    builder.get_object("FileChooserWidget") as Gtk.FileChooserWidget;
+
+			ok_button =
 			    this.builder.
-			    get_object("privacy_label") as Gtk. Label;
+			    get_object("OkButton") as Gtk.Button;
 
-			login_identity_label.set_label(_
-						       ("You are logged into YouTube as %s.").printf
-						       (publishing_parameters.get_user_name
-							()));
-			publish_to_label.
-			    set_label("Videos will appear in '%s'".printf
-				      (publishing_parameters.get_channel_name
-				       ()));
-
-			foreach(PrivacyDescription desc in privacy_descriptions) {
-				privacy_combo.append_text(desc.description);
-			}
-
-			privacy_combo.set_active(PrivacySetting.PUBLIC);
-			privacy_label.set_mnemonic_widget(privacy_combo);
-
-			logout_button.clicked.connect(on_logout_clicked);
-			publish_button.clicked.connect(on_publish_clicked);
+			ok_button.clicked.connect(on_publish_clicked);
 		}
 
 		private void on_publish_clicked() {
-			publishing_parameters.set_privacy(privacy_descriptions
-							  [privacy_combo.
-							   get_active()].
-							  privacy_setting);
+			publishing_parameters.set_path(file_chooser.get_filename());
 
 			publish();
 		}
 
-		private void on_logout_clicked() {
-			logout();
-		}
-
 		private void update_publish_button_sensitivity() {
-			publish_button.set_sensitive(true);
-		}
-
-		private PrivacyDescription[] create_privacy_descriptions() {
-			PrivacyDescription[]result = new PrivacyDescription[0];
-
-			result +=
-			    new PrivacyDescription("Public listed",
-						   PrivacySetting.PUBLIC);
-			result +=
-			    new PrivacyDescription("Public unlisted",
-						   PrivacySetting.UNLISTED);
-			result +=
-			    new PrivacyDescription("Private",
-						   PrivacySetting.PRIVATE);
-
-			return result;
+			ok_button.set_sensitive(true);
 		}
 
 		public Gtk.Widget get_widget() {
-			assert(pane_widget != null);
-			return pane_widget;
+			assert(file_widget != null);
+			return file_widget;
 		}
 
 		public Spit.Publishing.
@@ -256,7 +199,7 @@ private class PublishingParameters {
 
 		public void on_pane_uninstalled() {
 		}
-	}*/
+	}
 }
 
 private class DPOFPluginService:Object, Spit.Pluggable, Spit.Publishing.Service {
