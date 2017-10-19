@@ -23,6 +23,6 @@ indent:
 	indent -linux $(PROGRAM).vala
 
 $(PROGRAM).so: $(PROGRAM).vala Makefile
-	valac --save-temps --main=dummy_main -X -D_VERSION='"$(VERSION)"' --pkg=shotwell-plugin-dev-1.0 \
+	valac --save-temps --main=dummy_main -X -D_VERSION='"$(VERSION)"' --pkg=shotwell-plugin-dev-1.0 --pkg=posix \
 		-X --shared -X -fPIC $< -o $@
 

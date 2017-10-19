@@ -116,6 +116,8 @@ namespace Publishing.DPOF {
 
         private void do_publish()
         {
+            host.set_service_locked(true);
+
             host.serialize_publishables(-1);
             Spit.Publishing.Publishable[] publishables = host.get_publishables();
 
@@ -139,6 +141,31 @@ namespace Publishing.DPOF {
                 File dest = File.new_for_path(publishing_parameters.get_path() + "/" + source.get_basename());
                 source.copy(dest, 0, null, null);
             }
+
+            // create the DPOF standard data
+            Posix.mkdir(publishing_parameters.get_path() + "/MISC", Posix.S_IRWXU | Posix.S_IRWXG | Posix.S_IRWXO);
+            File dpof_infos = File.new_for_path(publishing_parameters.get_path() + "/MISC/AUTPRINT.MRK");
+
+            FileOutputStream os = dpof_infos.create (FileCreateFlags.NONE);
+
+            string fake_dpof_header = "[HDR]\nGEN REV = 01.00\nGEN CRT = \"SONY CYBERSHOT\"\nGEN DTM = 2017:10:16:13:20:27\n";
+            os.write(fake_dpof_header.data);
+
+            for(int i = 0; i < publishables.length; ++i)
+            {
+                Spit.Publishing.Publishable? pub = publishables[i];
+                File? source = pub.get_serialized_file();
+                
+                string publishable_dpof_data = "\n[JOB]\nPRT PID = " + (i+1).to_string("%03i") + "\nPRT TYP = STD\nIMG FMT = EXIF2 -J\n<IMG SRC = \"../" + source.get_basename() + ">\n";
+
+                os.write(publishable_dpof_data.data);
+
+            }            
+
+            os.close();
+
+            host.set_service_locked(false);
+            host.install_success_pane();
        }
 
 		public Spit.Publishing.Service get_service() {
