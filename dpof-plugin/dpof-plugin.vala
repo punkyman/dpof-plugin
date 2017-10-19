@@ -55,7 +55,7 @@ namespace Publishing.DPOF {
         //Spit.Publishing.Publishable[] publishables = host.get_publishables();
 
         private void do_show_pane() {
-			debug("ACTION: showing publishing options pane.");
+			debug("ACTION: showing publishing pane.");
 
 			Gtk.Builder builder = new Gtk.Builder();
 
@@ -69,7 +69,7 @@ namespace Publishing.DPOF {
 					e.message);
 				host.post_error(new Spit.Publishing.
 						PublishingError.LOCAL_FILE_ERROR
-						("A file required for publishing is unavailable. Publishing to Youtube can't continue."));
+						("A file required for publishing is unavailable. Publishing can't continue."));
 				return;
 			}
 
@@ -84,11 +84,62 @@ namespace Publishing.DPOF {
 		}
 
         private void on_location_publish() {
-            debug("clicked OK");
+            debug("clicked OK, selected folder %s", publishing_parameters.get_path());
 
             if(!is_running())
                 return;
+
+            do_publish();
         }
+
+        // recursively erase the content of a folder
+        private void empty_folder(File folder)
+        {
+            FileEnumerator enumerator = folder.enumerate_children("standard::*",FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
+
+            FileInfo info = null;
+        	while ((info = enumerator.next_file()) != null) 
+            {
+                File enumerated_file = folder.resolve_relative_path (info.get_name ());
+                string file_path = enumerated_file.get_path();
+        		if (info.get_file_type () == FileType.DIRECTORY)
+                {
+                    empty_folder(enumerated_file);
+                    Posix.rmdir(file_path);
+                }
+                else
+                {
+                    FileUtils.remove(file_path);
+                }                
+    		}
+        }
+
+        private void do_publish()
+        {
+            host.serialize_publishables(-1);
+            Spit.Publishing.Publishable[] publishables = host.get_publishables();
+
+            File folder = File.new_for_path(publishing_parameters.get_path());
+
+            empty_folder(folder);
+            
+            // copy selected pictures in the destination folder
+            for(int i = 0; i < publishables.length; ++i)
+            {
+                Spit.Publishing.Publishable? pub = publishables[i];
+
+                debug("DPOFPublisher: got a publishable with name %s", pub.get_publishing_name());
+                File? source = pub.get_serialized_file();
+
+                if(source == null)
+                    continue;
+
+                debug("DPOFPublisher: copying file %s.", source.get_path());
+
+                File dest = File.new_for_path(publishing_parameters.get_path() + "/" + source.get_basename());
+                source.copy(dest, 0, null, null);
+            }
+       }
 
 		public Spit.Publishing.Service get_service() {
 			return service;
