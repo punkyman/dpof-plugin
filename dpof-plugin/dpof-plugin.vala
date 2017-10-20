@@ -89,16 +89,30 @@ namespace Publishing.DPOF {
             if(!is_running())
                 return;
 
+            // since we are going to erase the content of the folder, make sure at least that the folder is a volume
+            if(!publishing_parameters.get_path().has_prefix("/media/"))
+                return;
+
             do_publish();
         }
 
         // recursively erase the content of a folder
         private void empty_folder(File folder)
         {
-            FileEnumerator enumerator = folder.enumerate_children("standard::*",FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
-
+            FileEnumerator enumerator = null;
             FileInfo info = null;
-        	while ((info = enumerator.next_file()) != null) 
+            
+            try
+            {
+                enumerator = folder.enumerate_children("standard::*",FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
+                info = enumerator.next_file();
+            }
+            catch (Error error) {
+                   host.post_error(new Spit.Publishing.PublishingError.LOCAL_FILE_ERROR(error.message));
+                   return;
+            }
+
+        	while (info != null) 
             {
                 File enumerated_file = folder.resolve_relative_path (info.get_name ());
                 string file_path = enumerated_file.get_path();
@@ -111,6 +125,15 @@ namespace Publishing.DPOF {
                 {
                     FileUtils.remove(file_path);
                 }                
+
+                try
+                {
+                    info = enumerator.next_file();
+                }
+                catch (Error error) {
+                       host.post_error(new Spit.Publishing.PublishingError.LOCAL_FILE_ERROR(error.message));
+                       return;
+                }
     		}
         }
 
@@ -139,30 +162,58 @@ namespace Publishing.DPOF {
                 debug("DPOFPublisher: copying file %s.", source.get_path());
 
                 File dest = File.new_for_path(publishing_parameters.get_path() + "/" + source.get_basename());
-                source.copy(dest, 0, null, null);
+                try
+                {
+                    source.copy(dest, 0, null, null);
+                }
+                catch (Error error) {
+                    host.post_error(new Spit.Publishing.PublishingError.LOCAL_FILE_ERROR(error.message));
+                    return;
+                }
             }
 
             // create the DPOF standard data
             Posix.mkdir(publishing_parameters.get_path() + "/MISC", Posix.S_IRWXU | Posix.S_IRWXG | Posix.S_IRWXO);
             File dpof_infos = File.new_for_path(publishing_parameters.get_path() + "/MISC/AUTPRINT.MRK");
-
-            FileOutputStream os = dpof_infos.create (FileCreateFlags.NONE);
-
-            string fake_dpof_header = "[HDR]\nGEN REV = 01.00\nGEN CRT = \"SONY CYBERSHOT\"\nGEN DTM = 2017:10:16:13:20:27\n";
-            os.write(fake_dpof_header.data);
+            FileOutputStream os = null;
+                      
+            try
+            {
+                os = dpof_infos.create (FileCreateFlags.NONE);
+    
+                string fake_dpof_header = "[HDR]\r\nGEN REV = 01.00\r\nGEN CRT = \"SONY CYBERSHOT\"\r\nGEN DTM = 2017:10:16:13:20:27\r\n";
+                os.write(fake_dpof_header.data);
+            }
+            catch (Error error) {
+                host.post_error(new Spit.Publishing.PublishingError.LOCAL_FILE_ERROR(error.message));
+                return;
+            }
 
             for(int i = 0; i < publishables.length; ++i)
             {
                 Spit.Publishing.Publishable? pub = publishables[i];
                 File? source = pub.get_serialized_file();
                 
-                string publishable_dpof_data = "\n[JOB]\nPRT PID = " + (i+1).to_string("%03i") + "\nPRT TYP = STD\nIMG FMT = EXIF2 -J\n<IMG SRC = \"../" + source.get_basename() + ">\n";
+                string publishable_dpof_data = "\r\n[JOB]\r\nPRT PID = " + (i+1).to_string("%03i") + "\r\nPRT TYP = STD\r\nIMG FMT = EXIF2 -J\r\n<IMG SRC = \"../" + source.get_basename() + "\">\r\n";
 
-                os.write(publishable_dpof_data.data);
-
+                try
+                {
+                    os.write(publishable_dpof_data.data);
+                }
+                catch (Error error) {
+                   host.post_error(new Spit.Publishing.PublishingError.LOCAL_FILE_ERROR(error.message));
+                   return;
+               }
             }            
 
-            os.close();
+            try
+            {
+                os.close();
+            }
+            catch (Error error) {
+                host.post_error(new Spit.Publishing.PublishingError.LOCAL_FILE_ERROR(error.message));
+                return;
+            }
 
             host.set_service_locked(false);
             host.install_success_pane();
