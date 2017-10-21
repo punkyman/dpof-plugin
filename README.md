@@ -9,9 +9,6 @@ The DPOF standard is a simple standard : it is composed of pictures, a MISC fold
 
 There is very little security on the folder selected in the plugin, it only checks if it's a folder in /media. Be careful, since it's gonna erase the content !
 
-To trace loading by shotwell, execute with the following command line :
-SHOTWELL_LOG=1 SHOTWELL_LOG_FILE=:console: shotwell
-
 To compile, install the sources of shotwell, then run :
 ./configure --install-headers
 ./make
@@ -23,4 +20,7 @@ Then in the plugin folder, run :
 
 The plugin will install in the user folder : ~/.gnome2/shotwell/plugins
 
-Still looking for a way to enable a plugin by default; as of now, 
+To trace loading by shotwell, execute with the following command line :
+SHOTWELL_LOG=1 SHOTWELL_LOG_FILE=:console: shotwell
+
+Still looking for a way to enable a plugin by default; as of now, the plugin will have to be enabled every time shotwell starts, in preferences / plugins tab.
